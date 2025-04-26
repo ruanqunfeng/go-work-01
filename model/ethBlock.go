@@ -21,6 +21,16 @@ type EthBlock struct {
 	BlockData        datatypes.JSON `gorm:"column:block_data;type:json;not null"`
 }
 
+func GetLastBlock() (*EthBlock, error) {
+	var block EthBlock
+	err := utils.Db.Order("block_number desc").First(&block).Error
+	if err != nil {
+		return nil, err
+	}
+	return &block, nil
+
+}
+
 func GetBlockByNumber(number int64) (*EthBlock, error) {
 	var block EthBlock
 	err := utils.Db.Where("block_number = ?", number).First(&block).Error

@@ -24,6 +24,10 @@ func CreateTx(tx *EthTx) error {
 	return utils.Db.Create(tx).Error
 }
 
+func BatchCreateTx(txs []*EthTx) error {
+	return utils.Db.CreateInBatches(txs, len(txs)).Error
+}
+
 func GetTxByHash(hash string) (tx *EthTx, e error) {
 	e = utils.Db.Where("tx_hash = ?", hash).First(&tx).Error
 	return

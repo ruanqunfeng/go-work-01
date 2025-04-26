@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/shopspring/decimal"
 )
 
@@ -25,7 +26,7 @@ func init() {
 func QueryBlockByNumber(blockNumber int64) *types.Block {
 	block, err := Client.BlockByNumber(context.Background(), big.NewInt(blockNumber))
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("获取区块失败:", err)
 	}
 
 	return block
@@ -45,7 +46,7 @@ type RawEthTx struct {
 
 func QueryTransaction(hash string) *RawEthTx {
 	txHash := common.HexToHash(hash)
-	tx, isPending, err := Client.TransactionByHash(context.Background(), txHash)
+	tx, _, err := Client.TransactionByHash(context.Background(), txHash)
 	if err != nil {
 		fmt.Println("获取交易失败:", err)
 	}
@@ -84,19 +85,10 @@ func QueryTransaction(hash string) *RawEthTx {
 	if receipt.Status == types.ReceiptStatusFailed {
 		// 如果交易失败，矿工收取 gasLimit * gasPrice
 		fee = new(big.Int).Mul(gasLimitBigInt, gasPrice)
-		fmt.Printf("Transaction failed. Fee: %s wei\n", fee.String())
 	} else {
 		// 如果交易成功，矿工收取实际使用的 gas * gasPrice
 		fee = new(big.Int).Mul(actualGasUsedBigInt, gasPrice)
-		fmt.Printf("Transaction succeeded. Fee: %s wei\n", fee.String())
 	}
-
-	// 输出结果
-	fmt.Printf("交易状态: %v\n", isPending)
-	fmt.Printf("发送方地址: %s\n", from.Hex())
-	fmt.Printf("接收方地址: %s\n", toAddress.Hex())
-	fmt.Printf("金额 (ETH): %s\n", weiToEth(tx.Value()))
-	fmt.Printf("手续费 (ETH): %s\n", weiToEth(fee))
 
 	ethTx := &RawEthTx{}
 
@@ -124,6 +116,16 @@ func QueryReceipt(txHash string) *types.Receipt {
 	fmt.Printf("Gas Used: %d\n", receipt.GasUsed)
 
 	return receipt
+}
+
+// 查询链上安全区块
+func QueryLatestBlock() *types.Block {
+	block, err := Client.BlockByNumber(context.Background(), big.NewInt(int64(rpc.FinalizedBlockNumber)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return block
 }
 
 // 转换wei为ETH
